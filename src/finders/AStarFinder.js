@@ -232,7 +232,9 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
             // will change
             if (avoidStaircase) {
                 lastDirection = node.parent === undefined? undefined : { x : node.x - node.parent.x, y : node.y - node.parent.y };
-                var turned = lastDirection === undefined? 0 : lastDirection.x !== x - node.x || lastDirection.y !== y - node.y;
+                // for simplicity, we're going to count the move from the starting node as a turn. 
+                // makes it easier to keep track of lastTurnX and lastTurnY so we can calculate momentum.
+                var turned = lastDirection === undefined? 1 : lastDirection.x !== x - node.x || lastDirection.y !== y - node.y;
                 ng += turnPenalty * turned;
 
                 // store the last time we turned.
