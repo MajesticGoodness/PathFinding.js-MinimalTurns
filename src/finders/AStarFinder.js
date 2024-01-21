@@ -181,7 +181,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
 
             if(iterations > maxIterations) {
                 // which of these paths we've found is the best one?
-                let bestPathFound = bestPath(paths);
+                let bestPathFound = Util.bestPath(paths);
                 // whichever that one may happen to be, return it.
                 return Util.backtrace(bestPathFound);
             }
@@ -294,7 +294,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
 
         // Handle tie-breaking for all moves except for those that occur at the start node.
         if (breakTies && ignoreStartTies && !atStartNode) {
-            resolveTies(neighborsAddedToList, minFVal, preferences);
+            Util.resolveTies(neighborsAddedToList, minFVal, preferences);
         }
 
         // Include the start node in tie-breaking. This will result in an extra iteration of A*.
@@ -302,7 +302,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
         // paths, bringing us to a total of 3 iterations needed to find the optimal path.
         
         else if (breakTies) {
-            resolveTies(neighborsAddedToList, minFVal, preferences);
+            Util.resolveTies(neighborsAddedToList, minFVal, preferences);
         }
         // We're no longer at the start node after this loop completes.
         atStartNode = false;
@@ -313,7 +313,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
     // found up until this point.
     
     if(paths) {
-        let bestPathFound = bestPath(paths);
+        let bestPathFound = Util.bestPath(paths);
         return Util.backtrace(bestPathFound);
     }
 
