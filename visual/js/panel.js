@@ -25,7 +25,9 @@ var Panel = {
      * TODO: clean up this messy code.
      */
     getFinder: function() {
-        var finder, selected_header, heuristic, allowDiagonal, biDirectional, dontCrossCorners, weight, trackRecursion, timeLimit;
+        var finder, selected_header, heuristic, allowDiagonal, biDirectional,
+        dontCrossCorners, weight, trackRecursion, timeLimit, useMomentum, momentum,
+        breakTies, ignoreStartTies, preferences = [];
         
         selected_header = $(
             '#algorithm_panel ' +
@@ -43,6 +45,12 @@ var Panel = {
                                      '.dont_cross_corners:checked').val() !=='undefined';
             avoidStaircase = typeof $('#astar_section ' +
                                      '.avoid_staircase:checked').val() !=='undefined';
+            useMomentum      = typeof $('#astar_section ' +
+                                     '.apply_momentum:checked').val() !=='undefined';
+            breakTies        = typeof $('#astar_section ' +
+                                    '.break_ties:checked').val() !=='undefined';
+            ignoreStartTies  = typeof $('#astar_section ' +
+                                    '.break_ties_startNode:checked').val() !=='undefined';
 
             /* parseInt returns NaN (which is falsy) if the string can't be parsed */
             turnPenalty = parseFloat($('#astar_section .turn_penalty').val()) || 0.001;
@@ -55,6 +63,33 @@ var Panel = {
             /* parseInt returns NaN (which is falsy) if the string can't be parsed */
             weight = parseInt($('#astar_section .astar_weight').val()) || 1;
             weight = weight >= 1 ? weight : 1; /* if negative or 0, use 1 */
+
+            // parse user-selected tie-breakers.
+            if (breakTies) {
+
+                UpRight = $('input[name=UpRight]:checked').val();
+                UpDown = $('input[name=UpDown]:checked').val();
+                UpLeft = $('input[name=UpLeft]:checked').val();
+                RightDown = $('input[name=RightDown]:checked').val();
+                LeftRight = $('input[name=LeftRight]:checked').val();
+                DownLeft = $('input[name=DownLeft]:checked').val();
+
+                preferences.push(UpRight);
+                preferences.push(UpDown);
+                preferences.push(UpLeft);
+                preferences.push(RightDown);
+                preferences.push(LeftRight);
+                preferences.push(DownLeft);
+
+                // 0 = Up, 1 = Right, 2 = Down, 3 = Left
+                for (i = 0; i < preferences.length; i++) {
+                    if (preferences[i] === "Up") preferences[i] = 0;
+                    if (preferences[i] === "Right") preferences[i] = 1;
+                    if (preferences[i] === "Down") preferences[i] = 2;
+                    if (preferences[i] === "Left") preferences[i] = 3;
+                    if (preferences[i] === "Ignore") preferences[i] = undefined;
+                }
+            }
 
             heuristic = $('input[name=astar_heuristic]:checked').val();
             if (biDirectional) {
@@ -71,7 +106,12 @@ var Panel = {
                     heuristic: PF.Heuristic[heuristic],
                     weight: weight,
                     avoidStaircase: avoidStaircase,
-                    turnPenalty: turnPenalty
+                    turnPenalty: turnPenalty,
+                    useMomentum : useMomentum,
+                    momentum : momentum,
+                    breakTies : breakTies,
+                    ignoreStartTies : ignoreStartTies,
+                    preferences : preferences
                 });
             }
             break;
