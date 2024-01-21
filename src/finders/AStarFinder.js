@@ -16,10 +16,48 @@ var DiagonalMovement = require('../core/DiagonalMovement');
  *     (defaults to manhattan).
  * @param {number} opt.weight Weight to apply to the heuristic to allow for
  *     suboptimal paths, in order to speed up the search.
- * @param {number} opt.avoidStarcasing Add penalties to discourage turning and
+ * @param {number} opt.avoidStaircase Add penalties to discourage turning and
  * causing a 'staircase' effect (defaults to false).
  * @param {number} opt.turnPenalty Penalty to add to turning. Higher numbers
- * discourage turning more (defaults to 1).
+ * discourage turning more (defaults to 0.001).
+ * 
+ * This value should be set to be less than the default cost of moving between
+ * adjacent nodes, which is 1 in A*.  A good rule of thumb: set this to a value
+ * such that the number of turns taken will never result in a total turnPenalty
+ * that is greater that default move cost. That is, if you have a path which
+ * took 10 turns, and your turnPenalty is 0.01, then the total of the turnPenalty
+ * accrued is only 0.1, which is less than 1. You're good! No wonky things will
+ * happen to the pathfinding in that case. 
+ * @param {boolean} opt.breakTies Whether to prefer certain paths over others
+ * when they're both tied in f-score.
+ * @param {boolean} opt.ignoreStartTies Three-way ties often occur at the
+ * start node, thus neccessitating an extra iteration of A*, for a total
+ * of three iterations. This option lets the user ignore that tie at the start, so
+ * as to avoid that extra iteration.
+ * @param {array} opt.preferences The set of preferences to be used for deciding
+ * how to break ties. Each element stores a direction, and its index number
+ * indicates the tie case.
+ * @param {number} opt.maxIterations The maximum number of iterations needed to
+ * find the shortest, optimal path. (Defaults to 2) Will default to 3 if tie
+ * breaking is set and we're not ignoring the ties that might occur at the
+ * start node.
+ * 
+ * When tie breaking is used, and the beginning node isn't excluded from
+ * tie resolution, it's possible for a three-way tie to occur. To accommodate
+ * this, an extra iteration is needed, for a total of 3 iterations. This is
+ * because A* will explore three different paths where each one had a different
+ * winner for the three-way tie.
+ * 
+ * It may in fact find the optimal path on the very first iteration, but there's
+ * no way for us to know that in advance. On the flip side, it might find the
+ * suboptimal path on the first 2 iterations, only finding the optimal path on
+ * the third. That's why we need run the iterations 3 times and check all 3 paths.
+ * @param {boolean} opt.useMomentum Whether to apply a momentum to paths. Paths
+ * which travel along the same axis will be rewarded with the momentum set
+ * by the user. (Defaults to 1).
+ * @param {number} opt.momentum The amount of momentum to be rewarded each time
+ * a node is traveling along the same line as the previous node. Values set
+ * should be smaller than your turn penalty. (Defaults to 0.0001).
  */
 function AStarFinder(opt) {
     opt = opt || {};
@@ -29,7 +67,14 @@ function AStarFinder(opt) {
     this.weight = opt.weight || 1;
     this.diagonalMovement = opt.diagonalMovement;
     this.avoidStaircase = opt.avoidStaircase;
-    this.turnPenalty = opt.turnPenalty || 1;
+    this.turnPenalty = opt.turnPenalty || 0.001;
+    this.useMomentum = opt.useMomentum;
+    this.momentum = opt.momentum || 0.0001;
+    this.breakTies = opt.breakTies
+    this.ignoreStartTies = opt.ignoreStartTies;
+    this.preferences = opt.preferences;
+    this.maxIterations = 2 + (this.breakTies && !this.ignoreStartTies)
+
 
     if (!this.diagonalMovement) {
         if (!this.allowDiagonal) {
