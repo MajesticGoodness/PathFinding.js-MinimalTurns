@@ -33,7 +33,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .right_panel {
-    width: 250px;
+    width: 300px;
     right: 20px;
 }
 
@@ -139,5 +139,5 @@ footer {
 }
 
 .spinner {
-    width: 2em;
+    width: 5em;
 }
