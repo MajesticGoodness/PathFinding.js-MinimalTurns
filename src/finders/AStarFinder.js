@@ -102,7 +102,7 @@ function AStarFinder(opt) {
  * @return {Array<Array<number>>} The path, including both start and
  *     end positions.
  */
-AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
+AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, paths, firstTileTaken, iterations) {
     var openList = new Heap(function(nodeA, nodeB) {
             return nodeA.f - nodeB.f;
         }),
@@ -112,17 +112,54 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
         diagonalMovement = this.diagonalMovement,
         avoidStaircase = this.avoidStaircase,
         turnPenalty = this.turnPenalty,
+        useMomentum = this.useMomentum,
+        momentum = this.momentum,
+        breakTies = this.breakTies,
+        ignoreStartTies = this.ignoreStartTies,
+        preferences = this.preferences,
+        maxIterations = this.maxIterations,
         weight = this.weight,
         abs = Math.abs, SQRT2 = Math.SQRT2,
-        lastDirection, node, neighbors, neighbor, i, l, x, y, ng;
+        lastDirection, node, neighbors, neighbor, i, l, x, y, ng,
+        atStartNode, minFVal, iterations, dirtyNodes = [];
+
+    // Block the first tile which was taken in the previous path to coerce A*
+    // into exploring a more optimal path >:)
+    if (paths) {
+        grid.setWalkableAt(firstTileTaken[0], firstTileTaken[1], false);
+    }
+
+    // if this is our first iteration, then we need to initialize our variables:
+    if(!iterations) {
+        // keep track of which iteration we're on.
+        iterations = 1;
+        // store the paths A* has managed to come up with here so we can compare
+        // them later
+        paths = [];
+    }
 
     // set the `g` and `f` value of the start node to be 0
     startNode.g = 0;
     startNode.f = 0;
 
+    // keep track of which nodes have been visited so we can clean them up for our
+    // subsequent iterations.
+    dirtyNodes.push(startNode.y);
+    dirtyNodes.push(startNode.x);
+
     // push the start node into the open list
     openList.push(startNode);
     startNode.opened = true;
+    // Keep track of whether this is the start node so we can handle
+    // ignoring tie-breaking at the start node later. we might want
+    // to avoid tie-breaking at the start node because it will often
+    // force another iteration of A*. we could just disable tie-breaking
+    // altogether, but then we lose the benefits. so, as a compromise
+    // we let the user ignore checking for ties at the start node while
+    // still allowing for tie checking at all other points in the path.
+    // this keeps the iterations of A* to two, while still retaining
+    // the tie-breaking.
+    atStartNode = true;
 
     // while the open list is not empty
     while (!openList.empty()) {
@@ -132,11 +169,51 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
 
         // if reached the end position, construct the path and return it
         if (node === endNode) {
-            return Util.backtrace(endNode);
+
+            iterations++;
+
+            // make a copy of this path which we found and add it to our array so
+            // we can either: loop again, or, if we've reached our iteration
+            // threshold, resolve which of these paths we've found is the optimal
+            // one and return it.
+            
+            paths.push(structuredClone(endNode));
+
+            if(iterations > maxIterations) {
+                // which of these paths we've found is the best one?
+                let bestPathFound = bestPath(paths);
+                // whichever that one may happen to be, return it.
+                return Util.backtrace(bestPathFound);
+            }
+
+            // Give us back the path we found in as an array of its coordinates.
+            thisPath = Util.backtrace(endNode);
+
+            // if our path's lengths turned out to be just 2 nodes, then our goal
+            // is directly next to us. in that case, there's no need to iterate
+            // again, as the optimal path is guaranteed to be found on the first loop.
+
+            if(thisPath.length === 2) return thisPath;
+            firstTileTaken = thisPath[1];
+
+            // reset all the nodes we visited this iteration back to an untouched state
+            // before we loop again.
+
+            grid.cleanUp(dirtyNodes, firstTileTaken);
+            return this.findPath(startX, startY, endX, endY, grid, paths, firstTileTaken, iterations);
         }
 
         // get neigbours of the current node
         neighbors = grid.getNeighbors(node, diagonalMovement);
+
+        // the nodes which we're going break our ties on.
+        let neighborsAddedToList = [];
+
+        // keep track of the previous f-score so we can find the lowest f-score among
+        // the nodes being considered. nodes which have the same f-score are considered
+        // to be tied.
+        let prevFVal = undefined;
+        
         for (i = 0, l = neighbors.length; i < l; ++i) {
             neighbor = neighbors[i];
 
@@ -157,6 +234,29 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
                 lastDirection = node.parent === undefined? undefined : { x : node.x - node.parent.x, y : node.y - node.parent.y };
                 var turned = lastDirection === undefined? 0 : lastDirection.x !== x - node.x || lastDirection.y !== y - node.y;
                 ng += turnPenalty * turned;
+
+                // store the last time we turned.
+                if(turned) {
+                    neighbor.lastTurn = true;
+                    neighbor.lastTurnX = node.x;
+                    neighbor.lastTurnY = node.y;
+                }
+
+                else {
+                    // pass the last time we turned to the next node so we can
+                    // use that information to reset our momentum.
+                    if(node.lastTurn = true) {
+                        neighbor.lastTurnX = node.lastTurnX;
+                        neighbor.lastTurnY = node.lastTurnY;
+                    }
+                }
+                // reward paths that have some momentum going.
+                ng -= momentum * !turned * useMomentum
+                
+                // reset our momentum when we turn.
+                ng += momentum * turned * 
+                heuristic(abs(node.x - neighbor.lastTurnX), abs(node.y - neighbor.lastTurnY)) 
+                * useMomentum;
             }
 
             // check if the neighbor has not been inspected yet, or
@@ -167,9 +267,22 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
                 neighbor.f = neighbor.g + neighbor.h;
                 neighbor.parent = node;
 
+                // if the previous f score is greater than the current one,
+                // then replace the minimum f score we've seen with this one.
+
+                if (prevFVal > neighbor.f || prevFVal == undefined) {
+                    minFVal = neighbor.f;
+                }
+                prevFVal = neighbor.f;
+
                 if (!neighbor.opened) {
                     openList.push(neighbor);
                     neighbor.opened = true;
+                    // Add nodes being considered to this array so we can pass it to resolveTies().
+                    neighborsAddedToList.push(neighbor);
+                    // Nodes which we need to clean up later for our next iteration of A*.
+                    dirtyNodes.push(neighbor.y);
+                    dirtyNodes.push(neighbor.x);
                 } else {
                     // the neighbor can be reached with smaller cost.
                     // Since its f value has been updated, we have to
@@ -178,7 +291,31 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
                 }
             }
         } // end for each neighbor
+
+        // Handle tie-breaking for all moves except for those that occur at the start node.
+        if (breakTies && ignoreStartTies && !atStartNode) {
+            resolveTies(neighborsAddedToList, minFVal, preferences);
+        }
+
+        // Include the start node in tie-breaking. This will result in an extra iteration of A*.
+        // The start often result in three-way ties, so we'll need to check all three possible
+        // paths, bringing us to a total of 3 iterations needed to find the optimal path.
+        
+        else if (breakTies) {
+            resolveTies(neighborsAddedToList, minFVal, preferences);
+        }
+        // We're no longer at the start node after this loop completes.
+        atStartNode = false;
+
     } // end while not open list empty
+
+    // if this iteration resulted in no path found, just return the best path
+    // found up until this point.
+    
+    if(paths) {
+        let bestPathFound = bestPath(paths);
+        return Util.backtrace(bestPathFound);
+    }
 
     // fail to find the path
     return [];
