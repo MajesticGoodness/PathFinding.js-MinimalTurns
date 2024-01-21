@@ -242,4 +242,29 @@ Grid.prototype.clone = function() {
     return newGrid;
 };
 
+/**
+ * Reset the grid back to a clean state.
+ */
+Grid.prototype.cleanUp = function(dirtyNodes, firstTileTaken) {
+    for(i = 0; i + 1 < dirtyNodes.length; i += 2) {
+        y = dirtyNodes[i];
+        x = dirtyNodes[i + 1];
+        currentNode = this.nodes[y][x];
+        currentNode.f = undefined;
+        currentNode.g = undefined;
+        currentNode.h = undefined;
+        currentNode.parent = undefined;
+        currentNode.opened = undefined;
+        currentNode.closed = undefined;
+        currentNode.lastTurnX = undefined;
+        currentNode.lastTurnY = undefined;
+        currentNode.direction = undefined;
+    }
+    
+    // Set the tile which was purposely blocked back to its unblocked state.
+    if(firstTileTaken) {
+        this.setWalkableAt(firstTileTaken[0], firstTileTaken[1], true);
+    }   
+};
+
 module.exports = Grid;
