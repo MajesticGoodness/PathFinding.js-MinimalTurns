@@ -287,18 +287,15 @@ exports.bestPath = bestPath;
  * Down wins over Right.
  * Right wins over Left.
  * Down wins over Left.
- *  
- * @return {Array<Array<number>>} The compressed path
+ * 
  */
 function resolveTies(neighborsAddedToList, minFVal, preferences) {
-    let neighborA;
-    let neighborB;
-    let tieExists = false;
+    tieExists = false;
     // be sure to set TIE_BREAKER to something less than your turn penalty or
     // wonky things will happen. don't ask me how i know :(
-    let TIE_BREAKER = turnPenalty / 100;
-    let tieCase = undefined;
-    let threeWayTie = false;
+    TIE_BREAKER = turnPenalty / 100;
+    tieCase = undefined;
+    threeWayTie = false;
 
     for (i = 0, j = 0; i < neighborsAddedToList.length; i++) {
         if (minFVal === neighborsAddedToList[i].f) {
