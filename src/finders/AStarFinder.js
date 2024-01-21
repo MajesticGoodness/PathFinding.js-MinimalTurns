@@ -181,7 +181,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
 
             if(iterations > maxIterations) {
                 // which of these paths we've found is the best one?
-                let bestPathFound = Util.bestPath(paths);
+                bestPathFound = Util.bestPath(paths);
                 // whichever that one may happen to be, return it.
                 return Util.backtrace(bestPathFound);
             }
@@ -207,12 +207,12 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
         neighbors = grid.getNeighbors(node, diagonalMovement);
 
         // the nodes which we're going break our ties on.
-        let neighborsAddedToList = [];
+        neighborsAddedToList = [];
 
         // keep track of the previous f-score so we can find the lowest f-score among
         // the nodes being considered. nodes which have the same f-score are considered
         // to be tied.
-        let prevFVal = undefined;
+        prevFVal = undefined;
         
         for (i = 0, l = neighbors.length; i < l; ++i) {
             neighbor = neighbors[i];
@@ -313,7 +313,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
     // found up until this point.
     
     if(paths) {
-        let bestPathFound = Util.bestPath(paths);
+        bestPathFound = Util.bestPath(paths);
         return Util.backtrace(bestPathFound);
     }
 
