@@ -45,8 +45,12 @@ var Panel = {
                                      '.avoid_staircase:checked').val() !=='undefined';
 
             /* parseInt returns NaN (which is falsy) if the string can't be parsed */
-            turnPenalty = parseInt($('#astar_section .turn_penalty').val()) || 1;
-            turnPenalty = turnPenalty >= 1 ? turnPenalty : 1; /* if negative or 0, use 1 */
+            turnPenalty = parseFloat($('#astar_section .turn_penalty').val()) || 0.001;
+            /* values for turnPenalty should be between 0 and 1, otherwise the turnPenalty 
+             * will dominate the default cost of moving between adjacent nodes. the default cost 
+             * for that movement is set to 1, so it's important we stay far away
+             * from that value, otherwise wonky things will happen. */
+            turnPenalty = turnPenalty > 0 && turnPenalty < 1 ? turnPenalty : 0.001;
 
             /* parseInt returns NaN (which is falsy) if the string can't be parsed */
             weight = parseInt($('#astar_section .astar_weight').val()) || 1;
