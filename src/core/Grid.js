@@ -153,21 +153,25 @@ Grid.prototype.getNeighbors = function(node, diagonalMovement) {
 
     // ↑
     if (this.isWalkableAt(x, y - 1)) {
+        nodes[y - 1][x].direction = 0;
         neighbors.push(nodes[y - 1][x]);
         s0 = true;
     }
     // →
     if (this.isWalkableAt(x + 1, y)) {
+        nodes[y][x + 1].direction = 1;
         neighbors.push(nodes[y][x + 1]);
         s1 = true;
     }
     // ↓
     if (this.isWalkableAt(x, y + 1)) {
+        nodes[y + 1][x].direction = 2;
         neighbors.push(nodes[y + 1][x]);
         s2 = true;
     }
     // ←
     if (this.isWalkableAt(x - 1, y)) {
+        nodes[y][x - 1].direction = 3;
         neighbors.push(nodes[y][x - 1]);
         s3 = true;
     }
