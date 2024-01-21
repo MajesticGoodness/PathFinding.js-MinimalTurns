@@ -244,3 +244,172 @@ function compressPath(path) {
     return compressed;
 }
 exports.compressPath = compressPath;
+
+/**
+ * Given an array of endNode, returns the one with the lowest f-score.
+ * @param {Array<endNode>} paths The array of endNodes.
+ * @return {endNode} The end node with the lowest f-score.
+ */
+function bestPath(paths) {
+    currentBestPath = paths[0];
+
+    for(i = 1; i < paths.length; i++) {
+        if(paths[i].f < currentBestPath.f) {
+            currentBestPath = paths[i];
+        }
+    }
+    return currentBestPath;
+}
+exports.bestPath = bestPath;
+
+/**
+ * Resolve ties between neighbor nodes.
+ * @param {Array<neighbor>} neighborsAddedToList The array filled with neighbors to the parent node.
+ * @param {number} minFVal The lowest f score which a neighbor contains. Will be used to detect ties.
+ * @param {Array<number>} preferences An array which contains which directions should win ties.
+ * 
+ * Who should win?
+ * ↑ vs → case 0 
+ * ↑ vs ↓ case 1
+ * ↑ vs ← case 2
+ * → vs ↓ case 3
+ * ← vs → case 4
+ * ↓ vs ← case 5
+ * 
+ * Directions: ↑ = 0, → = 1, ↓ = 2, ← = 3
+ * 
+ * Example:
+ * 
+ * preferences = [0, 0, 0, 2, 1, 2], then
+ * Up wins over Right.
+ * Up wins over Down.
+ * Up wins over Left.
+ * Down wins over Right.
+ * Right wins over Left.
+ * Down wins over Left.
+ *  
+ * @return {Array<Array<number>>} The compressed path
+ */
+function resolveTies(neighborsAddedToList, minFVal, preferences) {
+    let neighborA;
+    let neighborB;
+    let tieExists = false;
+    // be sure to set TIE_BREAKER to something less than your turn penalty or
+    // wonky things will happen. don't ask me how i know :(
+    let TIE_BREAKER = turnPenalty / 100;
+    let tieCase = undefined;
+    let threeWayTie = false;
+
+    for (i = 0, j = 0; i < neighborsAddedToList.length; i++) {
+        if (minFVal === neighborsAddedToList[i].f) {
+            j++;
+        }
+        // if we have a three way tie, then j will be greater than 2.
+        // we'll handle that by only considering the tie which is
+        // traveling in the same direction. 
+        if (j > 2) {
+            threeWayTie = true;
+            break;
+        }
+    }
+
+    if (threeWayTie) {
+
+        for (i = 0; i < neighborsAddedToList.length; i++) {
+            if (tieExists) break;
+
+            for (j = i + 1; j < neighborsAddedToList.length; j++) {
+
+                if ((neighborsAddedToList[i].f === neighborsAddedToList[j].f)
+                    && (neighborsAddedToList[i].f === minFVal)
+                    // in the case of three-way ties, neighbors being tied should share the same x or y.
+                    && (neighborsAddedToList[i].x === neighborsAddedToList[j].x
+                        || neighborsAddedToList[i].y === neighborsAddedToList[j].y)) {
+                    neighborA = neighborsAddedToList[i];
+                    neighborB = neighborsAddedToList[j];
+                    tieExists = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    else {
+
+        for (i = 0; i < neighborsAddedToList.length; i++) {
+            if (tieExists) break;
+
+            for (j = i + 1; j < neighborsAddedToList.length; j++) {
+
+                if ((neighborsAddedToList[i].f === neighborsAddedToList[j].f)
+                    && (neighborsAddedToList[i].f === minFVal)) {
+                    neighborA = neighborsAddedToList[i];
+                    neighborB = neighborsAddedToList[j];
+                    tieExists = true;
+                    break;
+                }
+            }
+        }
+
+    }
+
+    if (!tieExists) {
+        return;
+    }
+
+    if ((neighborA.direction === 0 && neighborB.direction === 1)
+        || (neighborA.direction === 1 && neighborB.direction === 0)) {
+        tieCase = 0
+    }
+    if ((neighborA.direction === 0 && neighborB.direction === 2)
+        || (neighborA.direction === 2 && neighborB.direction === 0)) {
+        tieCase = 1
+    }
+    if ((neighborA.direction === 0 && neighborB.direction === 3)
+        || (neighborA.direction === 3 && neighborB.direction === 0)) {
+        tieCase = 2
+    }
+    if ((neighborA.direction === 1 && neighborB.direction === 2)
+        || (neighborA.direction === 2 && neighborB.direction === 1)) {
+        tieCase = 3
+    }
+    if ((neighborA.direction === 3 && neighborB.direction === 1)
+        || (neighborA.direction === 1 && neighborB.direction === 3)) {
+        tieCase = 4
+    }
+    if ((neighborA.direction === 2 && neighborB.direction === 3)
+        || (neighborA.direction === 3 && neighborB.direction === 2)) {
+        tieCase = 5
+    }
+
+    switch (tieCase) {
+        case 0:
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            break;
+        case 1:
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            break;
+        case 2:
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            break;
+        case 3:
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            break;
+        case 4:
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            break;
+        case 5:
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            break;
+        default:
+            return;
+    }
+}
+
+exports.resolveTies = resolveTies;
