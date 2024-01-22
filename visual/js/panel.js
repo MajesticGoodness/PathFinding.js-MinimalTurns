@@ -60,6 +60,12 @@ var Panel = {
              * from that value, otherwise wonky things will happen. */
             turnPenalty = turnPenalty > 0 && turnPenalty < 1 ? turnPenalty : 0.001;
 
+            // get the momentum value set by the user.
+            // much like the turn penalty, it's best if this value is between 0 and 1, and far
+            // away from the cost of moving between neighboring nodes.
+            momentum = parseFloat($('#astar_section .momentum_factor').val()) || 0.0001;
+            momentum = momentum > 0 && momentum < 1 ? momentum : 0.0001;
+
             /* parseInt returns NaN (which is falsy) if the string can't be parsed */
             weight = parseInt($('#astar_section .astar_weight').val()) || 1;
             weight = weight >= 1 ? weight : 1; /* if negative or 0, use 1 */
