@@ -34,6 +34,17 @@ var DiagonalMovement = require('../core/DiagonalMovement');
  * start node, thus neccessitating an extra iteration of A*, for a total
  * of three iterations. This option lets the user ignore that tie at the start, so
  * as to avoid that extra iteration.
+ * @param {number} opt.tieBreaker The constant to be used to break ties. It's
+ * important that this constant be less than turnPenalty, but also greater than
+ * momentum. 
+ * 
+ * Otherwise:
+ * 
+ * (1) Tie-breaking dominate the turnPenalty, thus overriding its behavior.
+ * 
+ * (2) Tie-breaking will be dominated by the momentum, and have no effect on ties.
+ * 
+ * (Defaults to 0.00001).
  * @param {array} opt.preferences The set of preferences to be used for deciding
  * how to break ties. Each element stores a direction, and its index number
  * indicates the tie case.
@@ -57,7 +68,8 @@ var DiagonalMovement = require('../core/DiagonalMovement');
  * by the user. (Defaults to 1).
  * @param {number} opt.momentum The amount of momentum to be rewarded each time
  * a node is traveling along the same line as the previous node. Values set
- * should be smaller than your turn penalty. (Defaults to 0.0001).
+ * should be smaller than your turn penalty and tie breaker constant. 
+ * (Defaults to 0.0000001).
  */
 function AStarFinder(opt) {
     opt = opt || {};
@@ -69,9 +81,10 @@ function AStarFinder(opt) {
     this.avoidStaircase = opt.avoidStaircase;
     this.turnPenalty = opt.turnPenalty || 0.001;
     this.useMomentum = opt.useMomentum;
-    this.momentum = opt.momentum || 0.0001;
+    this.momentum = opt.momentum || 0.0000001;
     this.breakTies = opt.breakTies
     this.ignoreStartTies = opt.ignoreStartTies;
+    this.tieBreaker = opt.tieBreaker || 0.00001; 
     this.preferences = opt.preferences;
     this.maxIterations = 2 + (this.breakTies && !this.ignoreStartTies)
 
@@ -116,6 +129,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
         momentum = this.momentum,
         breakTies = this.breakTies,
         ignoreStartTies = this.ignoreStartTies,
+        tieBreaker = this.tieBreaker,
         preferences = this.preferences,
         maxIterations = this.maxIterations,
         weight = this.weight,
@@ -296,7 +310,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
 
         // Handle tie-breaking for all moves except for those that occur at the start node.
         if (breakTies && ignoreStartTies && !atStartNode) {
-            Util.resolveTies(neighborsAddedToList, minFVal, preferences);
+            Util.resolveTies(neighborsAddedToList, minFVal, preferences, tieBreaker);
         }
 
         // Include the start node in tie-breaking. This will result in an extra iteration of A*.
@@ -304,7 +318,7 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
         // paths, bringing us to a total of 3 iterations needed to find the optimal path.
         
         else if (breakTies) {
-            Util.resolveTies(neighborsAddedToList, minFVal, preferences);
+            Util.resolveTies(neighborsAddedToList, minFVal, preferences, tieBreaker);
         }
         // We're no longer at the start node after this loop completes.
         atStartNode = false;
