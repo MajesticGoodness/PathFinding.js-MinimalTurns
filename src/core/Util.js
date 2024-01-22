@@ -266,14 +266,20 @@ exports.bestPath = bestPath;
  * Resolve ties between neighbor nodes.
  * @param {Array<neighbor>} neighborsAddedToList The array filled with neighbors to the parent node.
  * @param {number} minFVal The lowest f score which a neighbor contains. Will be used to detect ties.
- * @param {Array<number>} preferences An array which contains which directions should win ties.
+ * @param {Array<number>} preferences An array containing which directions should win ties in each case.
  * 
  * Who should win?
+ * 
  * ↑ vs → case 0 
+ * 
  * ↑ vs ↓ case 1
+ * 
  * ↑ vs ← case 2
+ * 
  * → vs ↓ case 3
+ * 
  * ← vs → case 4
+ * 
  * ↓ vs ← case 5
  * 
  * Directions: ↑ = 0, → = 1, ↓ = 2, ← = 3
@@ -281,19 +287,25 @@ exports.bestPath = bestPath;
  * Example:
  * 
  * preferences = [0, 0, 0, 2, 1, 2], then
- * Up wins over Right.
- * Up wins over Down.
- * Up wins over Left.
- * Down wins over Right.
- * Right wins over Left.
- * Down wins over Left.
  * 
+ * Up wins over Right.
+ * 
+ * Up wins over Down.
+ * 
+ * Up wins over Left.
+ * 
+ * Down wins over Right.
+ * 
+ * Right wins over Left.
+ * 
+ * Down wins over Left.
+ * @param {number} tieBreaker The value to be used for breaking ties.
+
  */
-function resolveTies(neighborsAddedToList, minFVal, preferences) {
+function resolveTies(neighborsAddedToList, minFVal, preferences, tieBreaker) {
     tieExists = false;
-    // be sure to set TIE_BREAKER to something less than your turn penalty or
+    // be sure to set tieBreaker to something less than your turn penalty or
     // wonky things will happen. don't ask me how i know :(
-    TIE_BREAKER = turnPenalty / 100;
     tieCase = undefined;
     threeWayTie = false;
 
@@ -381,28 +393,28 @@ function resolveTies(neighborsAddedToList, minFVal, preferences) {
 
     switch (tieCase) {
         case 0:
-            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
-            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= tieBreaker;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= tieBreaker;
             break;
         case 1:
-            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
-            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= tieBreaker;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= tieBreaker;
             break;
         case 2:
-            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
-            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= tieBreaker;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= tieBreaker;
             break;
         case 3:
-            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
-            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= tieBreaker;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= tieBreaker;
             break;
         case 4:
-            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
-            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= tieBreaker;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= tieBreaker;
             break;
         case 5:
-            if (neighborA.direction === preferences[tieCase]) neighborA.g -= TIE_BREAKER;
-            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= TIE_BREAKER;
+            if (neighborA.direction === preferences[tieCase]) neighborA.g -= tieBreaker;
+            else if (neighborB.direction === preferences[tieCase]) neighborB.g -= tieBreaker;
             break;
         default:
             return;
