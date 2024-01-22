@@ -60,11 +60,18 @@ var Panel = {
              * from that value, otherwise wonky things will happen. */
             turnPenalty = turnPenalty > 0 && turnPenalty < 1 ? turnPenalty : 0.001;
 
+            tieBreaker = parseFloat($('#astar_section .tie_breaker').val()) || 0.00001;
+            // the value used to break ties should greater than the momentum, and less than the turnPenalty.
+            // otherwise, our tie breaking will be counteracted by the momentum.
+            tieBreaker = tieBreaker > 0 && tieBreaker < turnPenalty ? tieBreaker : 0.00001;
+
             // get the momentum value set by the user.
             // much like the turn penalty, it's best if this value is between 0 and 1, and far
-            // away from the cost of moving between neighboring nodes.
+            // away from the cost of moving between neighboring nodes. it should also be
+            // less than tieBreaker to prevent the effects of tie breaking and momentum from
+            // undoing each other.
             momentum = parseFloat($('#astar_section .momentum_factor').val()) || 0.0000001;
-            momentum = momentum > 0 && momentum < 1 ? momentum : 0.0000001;
+            momentum = momentum > 0 && momentum < (tieBreaker / 10) ? momentum : 0.0000001;
 
             /* parseInt returns NaN (which is falsy) if the string can't be parsed */
             weight = parseInt($('#astar_section .astar_weight').val()) || 1;
@@ -72,11 +79,6 @@ var Panel = {
 
             // parse user-selected tie-breakers, as well as the tieBreaker constant.
             if (breakTies) {
-
-                tieBreaker = parseFloat($('#astar_section .tie_breaker').val()) || 0.00001;
-                // the value used to break ties should greater than the momentum, and less than the turnPenalty.
-                // otherwise, our tie breaking will be counteracted by the momentum.
-                tieBreaker = tieBreaker > momentum && tieBreaker < turnPenalty ? tieBreaker : 0.00001;
 
                 UpRight = $('input[name=UpRight]:checked').val();
                 UpDown = $('input[name=UpDown]:checked').val();
