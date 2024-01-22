@@ -27,7 +27,7 @@ var Panel = {
     getFinder: function() {
         var finder, selected_header, heuristic, allowDiagonal, biDirectional,
         dontCrossCorners, weight, trackRecursion, timeLimit, useMomentum, momentum,
-        breakTies, ignoreStartTies, preferences = [];
+        breakTies, ignoreStartTies, tieBreaker, preferences = [];
         
         selected_header = $(
             '#algorithm_panel ' +
@@ -63,15 +63,20 @@ var Panel = {
             // get the momentum value set by the user.
             // much like the turn penalty, it's best if this value is between 0 and 1, and far
             // away from the cost of moving between neighboring nodes.
-            momentum = parseFloat($('#astar_section .momentum_factor').val()) || 0.0001;
-            momentum = momentum > 0 && momentum < 1 ? momentum : 0.0001;
+            momentum = parseFloat($('#astar_section .momentum_factor').val()) || 0.0000001;
+            momentum = momentum > 0 && momentum < 1 ? momentum : 0.0000001;
 
             /* parseInt returns NaN (which is falsy) if the string can't be parsed */
             weight = parseInt($('#astar_section .astar_weight').val()) || 1;
             weight = weight >= 1 ? weight : 1; /* if negative or 0, use 1 */
 
-            // parse user-selected tie-breakers.
+            // parse user-selected tie-breakers, as well as the tieBreaker constant.
             if (breakTies) {
+
+                tieBreaker = parseFloat($('#astar_section .tie_breaker').val()) || 0.00001;
+                // the value used to break ties should greater than the momentum, and less than the turnPenalty.
+                // otherwise, our tie breaking will be counteracted by the momentum.
+                tieBreaker = tieBreaker > momentum && tieBreaker < turnPenalty ? tieBreaker : 0.00001;
 
                 UpRight = $('input[name=UpRight]:checked').val();
                 UpDown = $('input[name=UpDown]:checked').val();
@@ -117,6 +122,7 @@ var Panel = {
                     momentum : momentum,
                     breakTies : breakTies,
                     ignoreStartTies : ignoreStartTies,
+                    tieBreaker : tieBreaker,
                     preferences : preferences
                 });
             }
