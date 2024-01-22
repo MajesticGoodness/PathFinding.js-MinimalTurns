@@ -314,13 +314,16 @@ AStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid, path
     // if this iteration resulted in no path found, just return the best path
     // found up until this point.
     
-    if(paths) {
+    if(paths.length > 0) {
         bestPathFound = Util.bestPath(paths);
         return Util.backtrace(bestPathFound);
     }
 
+    // if no path at all was found, that means the goal was unreachable:
+    else {
     // fail to find the path
     return [];
+    }
 };
 
 module.exports = AStarFinder;
